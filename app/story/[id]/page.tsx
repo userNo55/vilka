@@ -46,7 +46,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   const [openChapter, setOpenChapter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [votedChapters, setVotedChapters] = useState<string[]>([]);
   const [userCoins, setUserCoins] = useState(0);
 
@@ -61,10 +60,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         setUserCoins(profile?.coins || 0);
         const { data: v } = await supabase.from('votes').select('chapter_id').eq('user_id', user.id);
         setVotedChapters(v?.map(item => item.chapter_id) || []);
-        
-        // Проверка избранного
-        const { data: fav } = await supabase.from('favorites').select('story_id').eq('user_id', user.id).eq('story_id', id).single();
-        setIsFavorite(!!fav);
       }
 
       const { data: s } = await supabase.from('stories').select('*, profiles(*)').eq('id', id).single();
@@ -77,31 +72,26 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     loadData();
   }, [id]);
 
-  const toggleFavorite = async () => {
-    if (!user) return router.push('/auth');
-    if (isFavorite) {
-      await supabase.from('favorites').delete().match({ user_id: user.id, story_id: id });
-    } else {
-      await supabase.from('favorites').insert({ user_id: user.id, story_id: id });
-    }
-    setIsFavorite(!isFavorite);
-  };
-
+  // Обычное бесплатное голосование (вес 1)
   const handleVote = async (chapterId: string, optionId: string, currentVotes: number) => {
     if (!user) return router.push('/auth');
     const { error } = await supabase.from('votes').insert({ user_id: user.id, chapter_id: chapterId });
     if (error) return alert("Вы уже голосовали!");
+
     await supabase.from('options').update({ votes: currentVotes + 1 }).eq('id', optionId);
     window.location.reload();
   };
 
+  // Платное голосование (вес 3)
   const handlePaidVote = async (chapterId: string, optionId: string) => {
     if (userCoins < 1) return router.push('/buy');
+    
     const { error } = await supabase.rpc('vote_with_coin', {
       user_id_param: user.id,
       option_id_param: optionId,
       chapter_id_param: chapterId
     });
+
     if (error) alert(error.message);
     else window.location.reload();
   };
@@ -114,20 +104,15 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     <div className="max-w-2xl mx-auto p-6 font-sans bg-white min-h-screen text-slate-900">
       <header className="flex justify-between items-center mb-8 border-b pb-4">
         <Link href="/" className="text-blue-600 font-bold">← К списку</Link>
-        <div className="flex items-center gap-4">
-          <button onClick={toggleFavorite} className={`p-2 rounded-full border transition ${isFavorite ? 'bg-red-50 border-red-100 text-red-500' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-          </button>
-          {user && (
-            <Link href="/buy" className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full font-bold text-sm border border-blue-100">
-              {userCoins} ⚡
-            </Link>
-          )}
-        </div>
+        {user && (
+          <Link href="/buy" className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full font-bold text-sm border border-blue-100">
+            Баланс: {userCoins} ⚡ <span className="ml-1 text-blue-400">+</span>
+          </Link>
+        )}
       </header>
 
-      <h1 className="text-4xl font-black mb-4">{story.title}</h1>
-
+      <h1 className="text-4xl font-black mb-10">{story.title}</h1>
+      
       {/* --- БЛОК АВТОРА --- */}
       {story.profiles && (
         <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 rounded-[24px] border border-slate-100">
@@ -148,7 +133,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
       <p className="text-slate-500 text-lg mb-10 italic">{story.description}</p>
 
-      {/* Список глав */}
       <div className="space-y-6">
         {chapters.map((chapter) => {
           const isExpired = new Date(chapter.expires_at).getTime() < new Date().getTime();
@@ -163,7 +147,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                 className="w-full text-left p-6 flex justify-between items-center bg-white"
               >
                 <span className="font-bold text-xl">Глава {chapter.chapter_number}: {chapter.title}</span>
-                <span className="text-slate-300">{openChapter === chapter.id ? '−' : '+'}</span>
+                <span>{openChapter === chapter.id ? '−' : '+'}</span>
               </button>
 
               {openChapter === chapter.id && (
@@ -191,11 +175,12 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                                 <div className="absolute top-0 left-0 h-full bg-blue-500/30 transition-all" style={{ width: `${percentage}%` }} />
                               )}
                               <div className="relative flex justify-between z-10">
-                                <span className="font-medium">{opt.text}</span>
-                                {(hasVoted || isExpired || !isLatest) && <span className="font-mono text-blue-400">{percentage}%</span>}
+                                <span>{opt.text}</span>
+                                {(hasVoted || isExpired || !isLatest) && <span>{percentage}%</span>}
                               </div>
                             </button>
 
+                            {/* КНОПКА ПОДДЕРЖАТЬ (появляется после голосования) */}
                             {hasVoted && isLatest && !isExpired && (
                               <button 
                                 onClick={() => handlePaidVote(chapter.id, opt.id)}
@@ -210,7 +195,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     {!user && isLatest && (
-                      <p className="text-center text-xs text-slate-500 mt-6 uppercase font-bold">Войдите, чтобы голосовать</p>
+                      <p className="text-center text-xs text-slate-500 mt-6 uppercase font-bold tracking-widest">
+                        <Link href="/auth" className="text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
+                      </p>
                     )}
                   </div>
                 </div>
