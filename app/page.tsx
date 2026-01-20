@@ -108,9 +108,7 @@ export default function HomePage() {
               <button 
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                 className={`flex items-center gap-2 py-2 rounded-full transition-all duration-300 border ${
-                  showFavoritesOnly 
-                  ? "bg-red-50 text-red-500 border-red-100"
-                  : "bg-transparent text-slate-400 border-transparent hover:text-slate-600"
+                  showFavoritesOnly ? 'bg-red-50 text-red-500' : 'bg-transparent text-slate-400 hover:bg-slate-50'
                 }`}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5">
