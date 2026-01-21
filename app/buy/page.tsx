@@ -65,7 +65,7 @@ export default function BuyPage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-md mx-auto p-6 md:p-10 font-sans">
+    <div className="max-w-2xl mx-auto p-6 md:p-10 font-sans">
       
       {/* КНОПКА НАЗАД */}
       <header className="flex justify-between items-center mb-10 py-6 border-b border-slate-100">
