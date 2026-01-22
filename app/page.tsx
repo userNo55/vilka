@@ -88,11 +88,9 @@ export default function HomePage() {
     : stories;
 
   return (
-    // ГЛАВНЫЙ ФОН: Используем глубокий темно-серый, почти черный, как на фото
     <div className="min-h-screen bg-white dark:bg-[#0A0A0A] transition-colors duration-300">
       <main className="max-w-5xl mx-auto p-6 font-sans">
         
-        {/* Хедер и границы: темный режим должен быть чуть темнее, чем в предыдущей версии */}
         <header className="flex justify-between items-center mb-12 py-6 border-b border-slate-100 dark:border-gray-800">
           <Link href="/">
             <h1 className="text-4xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Vilka</h1>
@@ -106,7 +104,7 @@ export default function HomePage() {
                     onClick={() => setSortOrder(sortOrder === 'new' ? 'engagement' : 'new')}
                     className={`p-2 rounded-full transition-all duration-300 ${
                       sortOrder === 'engagement' 
-                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/50' // Яркий акцент
+                        ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/50'
                         : 'bg-transparent text-slate-400 hover:text-orange-500'
                     }`}
                     title={sortOrder === 'engagement' ? "Сортировка: Популярные" : "Сортировать по вовлеченности"}
@@ -163,7 +161,6 @@ export default function HomePage() {
                 <Link 
                   href={`/story/${story.id}`} 
                   key={story.id} 
-                  // ФОН КАРТОЧКИ: Чуть светлее фона страницы, как на фото. Добавляем синий контур при ховере.
                   className="group relative p-8 bg-white dark:bg-[#1A1A1A] border border-slate-200 dark:border-gray-800 rounded-[32px] hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 flex flex-col h-full"
                 >
                   <div className="flex justify-between items-start mb-6">
@@ -175,7 +172,7 @@ export default function HomePage() {
                       <button 
                         onClick={(e) => toggleFavorite(e, story.id, isFavorite)}
                         className={`p-1.5 rounded-full transition-all duration-200 ${
-                          isFavorite ? 'text-red-500 bg-red-50 dark:bg-red-950/30' : 'text-slate-300 dark:text-gray-600 hover:text-red-400 bg-slate-50 dark:bg-gray-800'
+                          isFavorite ? 'text-red-500 bg-red-50 dark:bg-red-950/30' : 'text-slate-300 dark:text-gray-600 hover:text-red-400 bg-white dark:bg-gray-800'
                         }`}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill={isFavorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5">
@@ -185,8 +182,7 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex gap-2">
-                      {/* Цвет молнии и фона точно как на фото */}
-                      <span className="flex items-center gap-1 text-[10px] font-bold text-orange-400 bg-orange-950/30 px-3 py-1 rounded-full uppercase">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-3 py-1 rounded-full uppercase">
                         ⚡ {story.engagement || 0}
                       </span>
                       <span className="text-[10px] font-bold text-blue-500 bg-blue-950/30 px-3 py-1 rounded-full uppercase">
