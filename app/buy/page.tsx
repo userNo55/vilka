@@ -65,27 +65,27 @@ export default function BuyPage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-2xl mx-auto px-6 pt-2 pb-10 font-sans">
+    <div className="max-w-2xl mx-auto px-6 pt-2 pb-10 font-sans bg-white dark:bg-[#0A0A0A] min-h-screen text-slate-900 dark:text-white transition-colors duration-300">
       
       {/* КНОПКА НАЗАД */}
-      <header className="flex justify-between items-center mb-10 py-6 border-b border-slate-100">
+      <header className="flex justify-between items-center mb-10 py-6 border-b border-slate-100 dark:border-gray-800">
         <Link 
           href="/" 
-          className="text-sm font-bold text-blue-600 hover:text-blue-800 transition flex items-center gap-2"
+          className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition flex items-center gap-2"
         >
           <span>←</span> На главную
         </Link>
         <div className="text-right">
-          <span className="text-[10px] text-slate-400 block uppercase font-black">Баланс</span>
-          <span className="font-bold text-sm text-slate-900">{coins} ⚡</span>
+          <span className="text-[10px] text-slate-400 dark:text-gray-500 block uppercase font-black">Баланс</span>
+          <span className="font-bold text-sm text-slate-900 dark:text-white">{coins} ⚡</span>
         </div>
       </header>
 
-      <div className="border rounded-[40px] p-8 md:p-10 shadow-2xl text-center bg-white">
-        <h1 className="text-3xl font-black mb-4 text-slate-900 leading-tight">Пополнить баланс</h1>
-        <p className="text-slate-500 mb-8 text-sm leading-relaxed">
-          Один платный голос (<span className="text-blue-600 font-bold">1 ⚡</span>) дает вашей опции сразу 
-          <span className="font-bold text-slate-900 ml-1 underline italic">3 очка</span>.
+      <div className="border border-slate-200 dark:border-gray-800 rounded-[32px] p-8 md:p-10 shadow-sm dark:shadow-lg dark:shadow-gray-900 text-center bg-white dark:bg-[#1A1A1A]">
+        <h1 className="text-3xl font-black mb-4 text-slate-900 dark:text-white leading-tight">Пополнить баланс</h1>
+        <p className="text-slate-500 dark:text-gray-400 mb-8 text-sm leading-relaxed">
+          Один платный голос (<span className="text-blue-600 dark:text-blue-400 font-bold">1 ⚡</span>) дает вашей опции сразу 
+          <span className="font-bold text-slate-900 dark:text-white ml-1 underline italic">3 очка</span>.
         </p>
 
         <div className="grid gap-4 mb-8">
@@ -94,13 +94,13 @@ export default function BuyPage() {
               key={n}
               onClick={() => handlePayment(n)}
               disabled={loading}
-              className="group p-5 border-2 border-slate-100 rounded-3xl flex justify-between items-center hover:border-blue-500 transition-all bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group p-5 border-2 border-slate-100 dark:border-gray-800 rounded-3xl flex justify-between items-center hover:border-blue-500 dark:hover:border-blue-500 transition-all bg-white dark:bg-[#0A0A0A] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="text-left">
-                <span className="block font-black text-2xl text-slate-900">{n} ⚡</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{n * 3} очка в сюжет</span>
+                <span className="block font-black text-2xl text-slate-900 dark:text-white">{n} ⚡</span>
+                <span className="text-[10px] text-slate-400 dark:text-gray-500 font-bold uppercase tracking-wider">{n * 3} очка в сюжет</span>
               </div>
-              <div className="bg-blue-600 text-white px-4 py-2 rounded-2xl font-black group-hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+              <div className="bg-blue-600 text-white px-4 py-2 rounded-2xl font-black group-hover:bg-blue-700 transition shadow-lg shadow-blue-100 dark:shadow-blue-900/50">
                 {n * 150} ₽
               </div>
             </button>
@@ -108,20 +108,20 @@ export default function BuyPage() {
         </div>
 
         {/* ПОДТВЕРЖДЕНИЕ УСЛОВИЙ (ОФЕРТА) */}
-        <div className="flex items-start gap-3 text-left mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+        <div className="flex items-start gap-3 text-left mb-8 p-4 bg-slate-50 dark:bg-gray-900/50 rounded-2xl border border-slate-100 dark:border-gray-800">
           <input 
             type="checkbox" 
             id="terms"
             checked={acceptedTerms}
             onChange={(e) => setAcceptedTerms(e.target.checked)}
-            className="mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            className="mt-1 w-5 h-5 rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 cursor-pointer"
           />
-          <label htmlFor="terms" className="text-[11px] leading-snug text-slate-500 cursor-pointer">
-            Я принимаю условия <Link href="/purchase-terms" className="text-blue-600 font-bold underline">Пользовательского соглашения</Link> и согласен на оказание платных услуг.
+          <label htmlFor="terms" className="text-[11px] leading-snug text-slate-500 dark:text-gray-400 cursor-pointer">
+            Я принимаю условия <Link href="/purchase-terms" className="text-blue-600 dark:text-blue-400 font-bold underline">Пользовательского соглашения</Link> и согласен на оказание платных услуг.
           </label>
         </div>
         
-        <p className="text-[10px] text-slate-300 uppercase tracking-widest font-bold">Безопасная оплата ЮKassa</p>
+        <p className="text-[10px] text-slate-400 dark:text-gray-500 uppercase tracking-widest font-bold">Безопасная оплата ЮKassa</p>
       </div>
     </div>
   );
