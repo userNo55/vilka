@@ -185,7 +185,7 @@ export default function HomePage() {
                       <span className="flex items-center gap-1 text-[10px] font-bold text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-3 py-1 rounded-full uppercase">
                         ⚡ {story.engagement || 0}
                       </span>
-                      <span className="text-[10px] font-bold text-blue-500 bg-blue-950/30 px-3 py-1 rounded-full uppercase">
+                      <span className="text-[10px] font-bold text-blue-500 bg-white dark:bg-blue-950/30 px-3 py-1 rounded-full uppercase">
                         {story.chapters?.length || 0} ГЛАВ
                       </span>
                     </div>
