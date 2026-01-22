@@ -202,12 +202,17 @@ export default function HomePage() {
                   {story.description || 'Описание отсутствует...'}
                 </p>
 
-                 <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">
-                    Автор: {story.profiles?.pseudonym || 'Аноним'}
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    →
+                <div className="mt-auto pt-6 border-t border-slate-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <span className="text-sm font-bold text-slate-700">
+                      {story.profiles?.pseudonym || 'Анонимный автор'}
+                    </span>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
                   </div>
                 </div>
               </Link>
