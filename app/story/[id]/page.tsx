@@ -156,9 +156,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                 <div className="p-6 border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-[#1A1A1A]">
                   <div className="text-lg leading-relaxed mb-10 text-slate-700 dark:text-gray-300 whitespace-pre-wrap">{chapter.content}</div>
                   
-                  {/* ИСПРАВЛЕНО: Текст вопроса теперь виден в светлой теме */}
-                  <div className="bg-slate-900 dark:bg-gray-900 p-8 rounded-[32px] text-white dark:text-white">
-                    <h3 className="text-xl font-bold mb-4 text-center text-white dark:text-white">
+                  {/* ИСПРАВЛЕНО: Фон блока голосования для светлой темы */}
+                  <div className="bg-white dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm">
+                    <h3 className="text-xl font-bold mb-4 text-center text-slate-900 dark:text-white">
                       {chapter.question_text}
                     </h3>
                     
@@ -174,12 +174,12 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                             <button 
                               disabled={!canVote}
                               onClick={() => handleVote(chapter.id, opt.id, opt.votes)}
-                              className="relative w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 dark:bg-gray-800/50 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/10 dark:hover:bg-gray-700/50"
+                              className="relative w-full text-left p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gray-800/50 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-gray-700/50"
                             >
                               {(hasVoted || isExpired || !isLatest) && (
-                                <div className="absolute top-0 left-0 h-full bg-blue-500/30 dark:bg-blue-500/40 transition-all" style={{ width: `${percentage}%` }} />
+                                <div className="absolute top-0 left-0 h-full bg-blue-500/20 dark:bg-blue-500/40 transition-all" style={{ width: `${percentage}%` }} />
                               )}
-                              <div className="relative flex justify-between z-10 text-white dark:text-white">
+                              <div className="relative flex justify-between z-10 text-slate-900 dark:text-white">
                                 <span>{opt.text}</span>
                                 {(hasVoted || isExpired || !isLatest) && <span>{percentage}%</span>}
                               </div>
@@ -189,7 +189,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                             {hasVoted && isLatest && !isExpired && (
                               <button 
                                 onClick={() => handlePaidVote(chapter.id, opt.id)}
-                                className="w-full py-2 text-xs font-bold text-blue-400 bg-blue-400/10 dark:bg-blue-500/20 rounded-lg hover:bg-blue-400/20 dark:hover:bg-blue-500/30 transition"
+                                className="w-full py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 transition"
                               >
                                 Повлиять (1 ⚡ = 3 голоса)
                               </button>
@@ -200,8 +200,8 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     {!user && isLatest && (
-                      <p className="text-center text-xs text-slate-300 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
-                        <Link href="/auth" className="text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
+                      <p className="text-center text-xs text-slate-500 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
+                        <Link href="/auth" className="text-blue-600 dark:text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
                       </p>
                     )}
                   </div>
