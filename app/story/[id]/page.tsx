@@ -30,7 +30,7 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
   }, [expiresAt]);
 
   return (
-    <div className="text-orange-500 font-mono text-xs mb-4 text-center bg-orange-50 py-2 rounded-xl border border-orange-100">
+    <div className="text-orange-500 font-mono text-xs mb-4 text-center bg-orange-50 dark:bg-orange-950/30 py-2 rounded-xl border border-orange-100 dark:border-orange-800">
       {timeLeft}
     </div>
   );
@@ -96,42 +96,42 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     else window.location.reload();
   };
 
-  if (loading) return <div className="p-10 text-center font-sans">Загрузка...</div>;
+  if (loading) return <div className="p-10 text-center font-sans dark:text-white">Загрузка...</div>;
 
   const latestChapterNumber = chapters.length > 0 ? Math.max(...chapters.map(c => c.chapter_number)) : 0;
 
   return (
-    <div className="max-w-2xl mx-auto p-6 font-sans bg-white min-h-screen text-slate-900">
-      <header className="flex justify-between items-center mb-8 border-b pb-4">
-        <Link href="/" className="text-blue-600 font-bold">← К списку</Link>
+    <div className="max-w-2xl mx-auto p-6 font-sans bg-white dark:bg-[#0A0A0A] min-h-screen text-slate-900 dark:text-white transition-colors duration-300">
+      <header className="flex justify-between items-center mb-8 border-b pb-4 border-slate-100 dark:border-gray-800">
+        <Link href="/" className="text-blue-600 dark:text-blue-400 font-bold hover:text-blue-800 dark:hover:text-blue-300 transition-colors">← К списку</Link>
         {user && (
-          <Link href="/buy" className="bg-blue-50 text-blue-600 px-4 py-1 rounded-full font-bold text-sm border border-blue-100">
+          <Link href="/buy" className="bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 px-4 py-1 rounded-full font-bold text-sm border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors">
             Баланс: {userCoins} ⚡ <span className="ml-1 text-blue-400">+</span>
           </Link>
         )}
       </header>
 
-      <h1 className="text-4xl font-black mb-10">{story.title}</h1>
+      <h1 className="text-4xl font-black mb-10 text-slate-900 dark:text-white">{story.title}</h1>
       
       {/* --- БЛОК АВТОРА --- */}
       {story.profiles && (
-        <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 rounded-[24px] border border-slate-100">
-          <div className="w-12 h-12 rounded-full bg-slate-200 overflow-hidden border-2 border-white shadow-sm">
+        <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 dark:bg-[#1A1A1A] rounded-[24px] border border-slate-100 dark:border-gray-800">
+          <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-gray-700 overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm">
             {story.profiles.avatar_url ? (
               <img src={story.profiles.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">?</div>
+              <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-gray-400 font-bold">?</div>
             )}
           </div>
           <div>
-            <div className="text-xs font-black uppercase tracking-widest text-slate-400 mb-0.5">Автор истории</div>
-            <div className="font-bold text-slate-900">{story.profiles.pseudonym || 'Анонимный автор'}</div>
-            {story.profiles.bio && <div className="text-sm text-slate-500 leading-tight mt-1">{story.profiles.bio}</div>}
+            <div className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-gray-500 mb-0.5">Автор истории</div>
+            <div className="font-bold text-slate-900 dark:text-white">{story.profiles.pseudonym || 'Анонимный автор'}</div>
+            {story.profiles.bio && <div className="text-sm text-slate-500 dark:text-gray-400 leading-tight mt-1">{story.profiles.bio}</div>}
           </div>
         </div>
       )}
 
-      <p className="text-slate-500 text-lg mb-10 italic">{story.description}</p>
+      <p className="text-slate-500 dark:text-gray-400 text-lg mb-10 italic">{story.description}</p>
 
       <div className="space-y-6">
         {chapters.map((chapter) => {
@@ -141,21 +141,26 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
 
           return (
-            <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${isLatest ? 'border-blue-200 ring-2 ring-blue-50' : 'opacity-80'}`}>
+            <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${
+              isLatest ? 'border-blue-200 dark:border-blue-800 ring-2 ring-blue-50 dark:ring-blue-950/30' : 'opacity-80'
+            } border-slate-200 dark:border-gray-800`}>
               <button 
                 onClick={() => setOpenChapter(openChapter === chapter.id ? null : chapter.id)}
-                className="w-full text-left p-6 flex justify-between items-center bg-white"
+                className="w-full text-left p-6 flex justify-between items-center bg-white dark:bg-[#1A1A1A] hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors"
               >
-                <span className="font-bold text-xl">Глава {chapter.chapter_number}: {chapter.title}</span>
-                <span>{openChapter === chapter.id ? '−' : '+'}</span>
+                <span className="font-bold text-xl text-slate-900 dark:text-white">Глава {chapter.chapter_number}: {chapter.title}</span>
+                <span className="text-slate-400 dark:text-gray-400 text-lg">{openChapter === chapter.id ? '−' : '+'}</span>
               </button>
 
               {openChapter === chapter.id && (
-                <div className="p-6 border-t bg-white">
-                  <div className="text-lg leading-relaxed mb-10 text-slate-700 whitespace-pre-wrap">{chapter.content}</div>
+                <div className="p-6 border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-[#1A1A1A]">
+                  <div className="text-lg leading-relaxed mb-10 text-slate-700 dark:text-gray-300 whitespace-pre-wrap">{chapter.content}</div>
                   
-                  <div className="bg-slate-900 p-8 rounded-[32px] text-white">
-                    <h3 className="text-xl font-bold mb-4 text-center">{chapter.question_text}</h3>
+                  {/* ИСПРАВЛЕНО: Текст вопроса теперь виден в светлой теме */}
+                  <div className="bg-slate-900 dark:bg-gray-900 p-8 rounded-[32px] text-white dark:text-white">
+                    <h3 className="text-xl font-bold mb-4 text-center text-white dark:text-white">
+                      {chapter.question_text}
+                    </h3>
                     
                     {isLatest && !isExpired && <Countdown expiresAt={chapter.expires_at} />}
 
@@ -169,12 +174,12 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                             <button 
                               disabled={!canVote}
                               onClick={() => handleVote(chapter.id, opt.id, opt.votes)}
-                              className="relative w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 overflow-hidden transition-all"
+                              className="relative w-full text-left p-4 rounded-xl border border-white/10 bg-white/5 dark:bg-gray-800/50 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-white/10 dark:hover:bg-gray-700/50"
                             >
                               {(hasVoted || isExpired || !isLatest) && (
-                                <div className="absolute top-0 left-0 h-full bg-blue-500/30 transition-all" style={{ width: `${percentage}%` }} />
+                                <div className="absolute top-0 left-0 h-full bg-blue-500/30 dark:bg-blue-500/40 transition-all" style={{ width: `${percentage}%` }} />
                               )}
-                              <div className="relative flex justify-between z-10">
+                              <div className="relative flex justify-between z-10 text-white dark:text-white">
                                 <span>{opt.text}</span>
                                 {(hasVoted || isExpired || !isLatest) && <span>{percentage}%</span>}
                               </div>
@@ -184,7 +189,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                             {hasVoted && isLatest && !isExpired && (
                               <button 
                                 onClick={() => handlePaidVote(chapter.id, opt.id)}
-                                className="w-full py-2 text-xs font-bold text-blue-400 bg-blue-400/10 rounded-lg hover:bg-blue-400/20 transition"
+                                className="w-full py-2 text-xs font-bold text-blue-400 bg-blue-400/10 dark:bg-blue-500/20 rounded-lg hover:bg-blue-400/20 dark:hover:bg-blue-500/30 transition"
                               >
                                 Повлиять (1 ⚡ = 3 голоса)
                               </button>
@@ -195,7 +200,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     {!user && isLatest && (
-                      <p className="text-center text-xs text-slate-500 mt-6 uppercase font-bold tracking-widest">
+                      <p className="text-center text-xs text-slate-300 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
                         <Link href="/auth" className="text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
                       </p>
                     )}
