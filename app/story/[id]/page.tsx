@@ -202,7 +202,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const hasVoted = votedChapters.includes(chapter.id);
           const isLatest = chapter.chapter_number === latestChapterNumber;
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
-          const canDelete = isAuthor && !isExpired; // Кнопка должна показываться только когда НЕ истекло
+          const canDelete = isAuthor && isLatest && !isExpired; // Кнопка должна показываться только когда НЕ истекло
 
           return (
             <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${
