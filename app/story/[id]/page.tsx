@@ -48,6 +48,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   const [user, setUser] = useState<any>(null);
   const [votedChapters, setVotedChapters] = useState<string[]>([]);
   const [userCoins, setUserCoins] = useState(0);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -72,6 +73,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     loadData();
   }, [id]);
 
+  // Проверка является ли пользователь автором
+  const isAuthor = user && story && story.author_id === user.id;
+
   // Обычное бесплатное голосование (вес 1)
   const handleVote = async (chapterId: string, optionId: string, currentVotes: number) => {
     if (!user) return router.push('/auth');
@@ -94,6 +98,64 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
     if (error) alert(error.message);
     else window.location.reload();
+  };
+
+  // Удаление главы (доступно только автору и только до окончания голосования)
+  const handleDeleteChapter = async (chapterId: string, expiresAt: string) => {
+    const isExpired = new Date(expiresAt).getTime() < new Date().getTime();
+    
+    if (isExpired) {
+      alert("Нельзя удалить главу после окончания голосования");
+      return;
+    }
+
+    if (!confirm("Вы уверены, что хотите удалить эту главу? Это действие нельзя отменить.")) {
+      return;
+    }
+
+    setDeleting(chapterId);
+
+    try {
+      // Сначала удаляем все голоса для этой главы
+      const { error: votesError } = await supabase
+        .from('votes')
+        .delete()
+        .eq('chapter_id', chapterId);
+
+      if (votesError) throw votesError;
+
+      // Удаляем все варианты ответов для этой главы
+      const { error: optionsError } = await supabase
+        .from('options')
+        .delete()
+        .eq('chapter_id', chapterId);
+
+      if (optionsError) throw optionsError;
+
+      // Удаляем саму главу
+      const { error: chapterError } = await supabase
+        .from('chapters')
+        .delete()
+        .eq('id', chapterId);
+
+      if (chapterError) throw chapterError;
+
+      // Обновляем локальное состояние
+      setChapters(chapters.filter(c => c.id !== chapterId));
+      
+      // Если удаляли открытую главу, закрываем её
+      if (openChapter === chapterId) {
+        setOpenChapter(null);
+      }
+
+      alert("Глава успешно удалена");
+      
+    } catch (error) {
+      console.error("Ошибка при удалении главы:", error);
+      alert("Произошла ошибка при удалении главы");
+    } finally {
+      setDeleting(null);
+    }
   };
 
   if (loading) return <div className="p-10 text-center font-sans dark:text-white">Загрузка...</div>;
@@ -139,24 +201,45 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const hasVoted = votedChapters.includes(chapter.id);
           const isLatest = chapter.chapter_number === latestChapterNumber;
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
+          const canDelete = isAuthor && !isExpired && !chapter.is_published; // Добавлено условие, что глава не опубликована
 
           return (
             <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${
               isLatest ? 'border-blue-200 dark:border-blue-800 ring-2 ring-blue-50 dark:ring-blue-950/30' : 'opacity-80'
             } border-slate-200 dark:border-gray-800`}>
-              <button 
-                onClick={() => setOpenChapter(openChapter === chapter.id ? null : chapter.id)}
-                className="w-full text-left p-6 flex justify-between items-center bg-white dark:bg-[#1A1A1A] hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors"
-              >
-                <span className="font-bold text-xl text-slate-900 dark:text-white">Глава {chapter.chapter_number}: {chapter.title}</span>
-                <span className="text-slate-400 dark:text-gray-400 text-lg">{openChapter === chapter.id ? '−' : '+'}</span>
-              </button>
+              <div className="flex justify-between items-center bg-white dark:bg-[#1A1A1A] hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors">
+                <button 
+                  onClick={() => setOpenChapter(openChapter === chapter.id ? null : chapter.id)}
+                  className="flex-1 text-left p-6 flex justify-between items-center"
+                >
+                  <span className="font-bold text-xl text-slate-900 dark:text-white">Глава {chapter.chapter_number}: {chapter.title}</span>
+                  <span className="text-slate-400 dark:text-gray-400 text-lg">{openChapter === chapter.id ? '−' : '+'}</span>
+                </button>
+                
+                {/* Кнопка удаления для автора */}
+                {canDelete && (
+                  <button
+                    onClick={() => handleDeleteChapter(chapter.id, chapter.expires_at)}
+                    disabled={deleting === chapter.id}
+                    className="mr-4 p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors disabled:opacity-50"
+                    title="Удалить главу (доступно до окончания голосования)"
+                  >
+                    {deleting === chapter.id ? (
+                      <div className="w-4 h-4 border-2 border-red-500 dark:border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
 
               {openChapter === chapter.id && (
                 <div className="p-6 border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-[#1A1A1A]">
                   <div className="text-lg leading-relaxed mb-10 text-slate-700 dark:text-gray-300 whitespace-pre-wrap">{chapter.content}</div>
                   
-                  {/* ИСПРАВЛЕНО: Фон блока голосования для светлой темы */}
+                  {/* Фон блока голосования */}
                   <div className="bg-white dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm">
                     <h3 className="text-xl font-bold mb-4 text-center text-slate-900 dark:text-white">
                       {chapter.question_text}
