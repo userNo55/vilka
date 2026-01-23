@@ -116,29 +116,12 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     setDeleting(chapterId);
 
     try {
-      // Сначала удаляем все голоса для этой главы
-      const { error: votesError } = await supabase
-        .from('votes')
-        .delete()
-        .eq('chapter_id', chapterId);
+      // Используем транзакцию для согласованного удаления
+      const { error } = await supabase.rpc('delete_chapter_with_related', {
+        chapter_id_param: chapterId
+      });
 
-      if (votesError) throw votesError;
-
-      // Удаляем все варианты ответов для этой главы
-      const { error: optionsError } = await supabase
-        .from('options')
-        .delete()
-        .eq('chapter_id', chapterId);
-
-      if (optionsError) throw optionsError;
-
-      // Удаляем саму главу
-      const { error: chapterError } = await supabase
-        .from('chapters')
-        .delete()
-        .eq('id', chapterId);
-
-      if (chapterError) throw chapterError;
+      if (error) throw error;
 
       // Обновляем локальное состояние
       setChapters(chapters.filter(c => c.id !== chapterId));
@@ -201,7 +184,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const hasVoted = votedChapters.includes(chapter.id);
           const isLatest = chapter.chapter_number === latestChapterNumber;
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
-          const canDelete = isAuthor && !isExpired && !chapter.is_published; // Добавлено условие, что глава не опубликована
+          const canDelete = isAuthor && !isExpired; // ИСПРАВЛЕНО: !isExpired вместо isExpired
 
           return (
             <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${
