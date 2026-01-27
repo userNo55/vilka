@@ -64,6 +64,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   const [votedChapters, setVotedChapters] = useState<string[]>([]);
   const [userCoins, setUserCoins] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(false);
 
   // Функция для получения сохраненной открытой главы из localStorage
   const getSavedOpenChapter = () => {
@@ -243,6 +244,35 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     }
   };
 
+  // Функция завершения истории
+  const handleCompleteStory = async () => {
+    if (!isAuthor || !story) return;
+    
+    if (!confirm("Завершить историю? После этого нельзя будет добавлять новые главы.")) {
+      return;
+    }
+
+    setCompleting(true);
+
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .update({ is_completed: true })
+        .eq('id', story.id);
+
+      if (error) throw error;
+
+      // Обновляем локальное состояние
+      setStory({ ...story, is_completed: true });
+      alert("История завершена!");
+    } catch (error) {
+      console.error("Ошибка при завершении истории:", error);
+      alert("Произошла ошибка");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-6 font-sans bg-white dark:bg-[#0A0A0A] min-h-screen text-slate-900 dark:text-white transition-colors duration-300">
@@ -314,6 +344,39 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
+      {/* --- КНОПКА ЗАВЕРШЕНИЯ ИСТОРИИ (только для автора) --- */}
+      {isAuthor && !story.is_completed && (
+        <div className="mb-8 flex justify-end">
+          <button
+            onClick={handleCompleteStory}
+            disabled={completing}
+            className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-3 rounded-2xl font-bold transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {completing ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Завершение...</span>
+              </div>
+            ) : (
+              '✅ Завершить историю'
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* --- БАННЕР ЗАВЕРШЕННОЙ ИСТОРИИ --- */}
+      {story.is_completed && (
+        <div className="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 rounded-2xl text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span className="text-purple-600 dark:text-purple-400 font-bold">🏁 История завершена</span>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-gray-400">Автор завершил эту историю, новые главы не добавляются</p>
+        </div>
+      )}
+
       <p className="text-slate-500 dark:text-gray-400 text-lg mb-10 italic">{story.description}</p>
 
       <div className="space-y-6">
@@ -321,11 +384,11 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const isExpired = new Date(chapter.expires_at).getTime() < new Date().getTime();
           const hasVoted = votedChapters.includes(chapter.id);
           const isLatest = chapter.chapter_number === latestChapterNumber;
-          const isLatestVotable = isLatest && !isExpired; // Последняя глава с активным голосованием
+          const isLatestVotable = isLatest && !isExpired && !story.is_completed; // Учитываем завершенность истории
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
           
-          // Удаление доступно ТОЛЬКО для ПОСЛЕДНЕЙ главы И ТОЛЬКО до окончания голосования
-          const canDelete = isAuthor && isLatest && !isExpired;
+          // Удаление доступно ТОЛЬКО для ПОСЛЕДНЕЙ главы И ТОЛЬКО до окончания голосования И если история не завершена
+          const canDelete = isAuthor && isLatest && !isExpired && !story.is_completed;
 
           return (
             <div key={chapter.id} className={`border rounded-[24px] overflow-hidden ${
@@ -347,7 +410,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                   <span className="text-slate-400 dark:text-gray-400 text-lg">{openChapter === chapter.id ? '−' : '+'}</span>
                 </button>
                 
-                {/* Кнопка удаления для автора - ТОЛЬКО для последней главы и ТОЛЬКО до окончания голосования */}
+                {/* Кнопка удаления для автора - ТОЛЬКО для последней главы, до окончания голосования и если история не завершена */}
                 {canDelete && (
                   <button
                     onClick={() => handleDeleteChapter(chapter.id, chapter.expires_at)}
@@ -370,57 +433,73 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                 <div className="p-6 border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-[#1A1A1A]">
                   <div className="text-lg leading-relaxed mb-10 text-slate-700 dark:text-gray-300 whitespace-pre-wrap">{chapter.content}</div>
                   
-                  {/* Фон блока голосования */}
-                  <div className="bg-white dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm">
-                    <h3 className="text-xl font-bold mb-4 text-center text-slate-900 dark:text-white">
-                      {chapter.question_text}
-                    </h3>
-                    
-                    {/* Таймер показывается ТОЛЬКО для последней главы И ТОЛЬКО если голосование не завершено */}
-                    {isLatestVotable && <Countdown expiresAt={chapter.expires_at} />}
+                  {/* БЛОК ГОЛОСОВАНИЯ или ИНФОРМАЦИЯ О ЗАВЕРШЕНИИ */}
+                  {!story.is_completed ? (
+                    <div className="bg-white dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm">
+                      <h3 className="text-xl font-bold mb-4 text-center text-slate-900 dark:text-white">
+                        {chapter.question_text}
+                      </h3>
+                      
+                      {/* Таймер показывается ТОЛЬКО для последней главы И ТОЛЬКО если голосование не завершено */}
+                      {isLatestVotable && <Countdown expiresAt={chapter.expires_at} />}
 
-                    <div className="space-y-3">
-                      {chapter.options?.map((opt: any) => {
-                        const percentage = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                        // Голосовать можно ТОЛЬКО в последней главе И ТОЛЬКО если голосование не завершено
-                        const canVote = isLatestVotable && !hasVoted && user;
+                      <div className="space-y-3">
+                        {chapter.options?.map((opt: any) => {
+                          const percentage = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
+                          // Голосовать можно ТОЛЬКО в последней главе И ТОЛЬКО если голосование не завершено
+                          const canVote = isLatestVotable && !hasVoted && user;
 
-                        return (
-                          <div key={opt.id} className="space-y-2">
-                            <button 
-                              disabled={!canVote}
-                              onClick={() => handleVote(chapter.id, opt.id, opt.votes)}
-                              className="relative w-full text-left p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gray-800/50 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-gray-700/50"
-                            >
-                              {(hasVoted || isExpired || !isLatestVotable) && (
-                                <div className="absolute top-0 left-0 h-full bg-blue-500/20 dark:bg-blue-500/40 transition-all" style={{ width: `${percentage}%` }} />
-                              )}
-                              <div className="relative flex justify-between z-10 text-slate-900 dark:text-white">
-                                <span>{opt.text}</span>
-                                {(hasVoted || isExpired || !isLatestVotable) && <span>{percentage}%</span>}
-                              </div>
-                            </button>
-
-                            {/* КНОПКА ПОДДЕРЖАТЬ (появляется после голосования) - ТОЛЬКО для последней главы */}
-                            {hasVoted && isLatestVotable && (
+                          return (
+                            <div key={opt.id} className="space-y-2">
                               <button 
-                                onClick={() => handlePaidVote(chapter.id, opt.id)}
-                                className="w-full py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 transition"
+                                disabled={!canVote}
+                                onClick={() => handleVote(chapter.id, opt.id, opt.votes)}
+                                className="relative w-full text-left p-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-gray-800/50 overflow-hidden transition-all disabled:cursor-not-allowed disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-gray-700/50"
                               >
-                                Повлиять (1 ⚡ = 3 голоса)
+                                {(hasVoted || isExpired || !isLatestVotable) && (
+                                  <div className="absolute top-0 left-0 h-full bg-blue-500/20 dark:bg-blue-500/40 transition-all" style={{ width: `${percentage}%` }} />
+                                )}
+                                <div className="relative flex justify-between z-10 text-slate-900 dark:text-white">
+                                  <span>{opt.text}</span>
+                                  {(hasVoted || isExpired || !isLatestVotable) && <span>{percentage}%</span>}
+                                </div>
                               </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
 
-                    {!user && isLatestVotable && (
-                      <p className="text-center text-xs text-slate-500 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
-                        <Link href="/auth" className="text-blue-600 dark:text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
+                              {/* КНОПКА ПОДДЕРЖАТЬ (появляется после голосования) - ТОЛЬКО для последней главы */}
+                              {hasVoted && isLatestVotable && (
+                                <button 
+                                  onClick={() => handlePaidVote(chapter.id, opt.id)}
+                                  className="w-full py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 transition"
+                                >
+                                  Повлиять (1 ⚡ = 3 голоса)
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {!user && isLatestVotable && (
+                        <p className="text-center text-xs text-slate-500 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
+                          <Link href="/auth" className="text-blue-600 dark:text-blue-400 hover:underline">Войдите</Link>, чтобы участвовать
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm text-center">
+                      <div className="text-purple-600 dark:text-purple-400 mb-4">
+                        <svg className="w-12 h-12 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">
+                        История завершена
+                      </h3>
+                      <p className="text-slate-500 dark:text-gray-400">
+                        Автор завершил эту историю. Читайте финал и обсуждайте в комментариях!
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
