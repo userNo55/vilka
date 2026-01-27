@@ -120,7 +120,11 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         ] = await Promise.all([
           user ? supabase.from('profiles').select('coins').eq('id', user.id).single() : Promise.resolve({ data: null }),
           user ? supabase.from('votes').select('chapter_id').eq('user_id', user.id) : Promise.resolve({ data: [] }),
-          supabase.from('stories').select('*, profiles(*)').eq('id', id).single(),
+          // ИСПРАВЛЕНО: запрашиваем ВСЕ поля из stories
+          supabase.from('stories').select(`
+            *,
+            profiles(*)
+          `).eq('id', id).single(),
           supabase.from('chapters').select('*, options(*)').eq('story_id', id).order('chapter_number', { ascending: true })
         ]);
 
@@ -130,6 +134,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         const storyData = storyPromise.data;
         const chaptersData = chaptersPromise.data;
 
+        console.log('Загружена история:', storyData); // Для отладки
         setUserCoins(profileData?.coins || 0);
         setVotedChapters(votesData?.map((item: any) => item.chapter_id) || []);
         setStory(storyData);
@@ -262,8 +267,11 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
       if (error) throw error;
 
-      // Обновляем локальное состояние
-      setStory({ ...story, is_completed: true });
+      // Обновляем локальное состояние - ВАЖНО: копируем ВСЕ поля
+      setStory({ 
+        ...story, 
+        is_completed: true 
+      });
       alert("История завершена!");
     } catch (error) {
       console.error("Ошибка при завершении истории:", error);
