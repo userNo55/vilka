@@ -115,9 +115,8 @@ export default function Dashboard() {
                   </Link>
                   <p className="text-slate-400 dark:text-gray-500 text-sm">
                     Опубликовано глав: <span className="font-bold text-slate-600 dark:text-gray-400">{story.chapters?.length || 0}</span>
-                    {isCompleted && (
-                  
-                    )}
+                    {isCompleted        
+                    }
                   </p>
                 </div>
                 
