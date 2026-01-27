@@ -387,6 +387,26 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
       <p className="text-slate-500 dark:text-gray-400 text-lg mb-10 italic">{story.description}</p>
 
+      {/* --- КНОПКА ЗАВЕРШЕНИЯ ИСТОРИИ (только для автора) --- */}
+      {isAuthor && !story.is_completed && (
+        <div className="mb-8 flex justify-center">
+          <button
+            onClick={handleCompleteStory}
+            disabled={completing}
+            className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-3 rounded-2xl font-bold transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {completing ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Завершение...</span>
+              </div>
+            ) : (
+              '✅ Завершить историю'
+            )}
+          </button>
+        </div>
+      )}
+
       <div className="space-y-6">
         {chapters.map((chapter) => {
           const isExpired = new Date(chapter.expires_at).getTime() < new Date().getTime();
