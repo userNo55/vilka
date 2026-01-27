@@ -352,26 +352,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      {/* --- КНОПКА ЗАВЕРШЕНИЯ ИСТОРИИ (только для автора) --- */}
-      {isAuthor && !story.is_completed && (
-        <div className="mb-8 flex justify-end">
-          <button
-            onClick={handleCompleteStory}
-            disabled={completing}
-            className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-3 rounded-2xl font-bold transition-colors shadow-lg shadow-purple-200 dark:shadow-purple-900/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {completing ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Завершение...</span>
-              </div>
-            ) : (
-              '✅ Завершить историю'
-            )}
-          </button>
-        </div>
-      )}
-
       {/* --- БАННЕР ЗАВЕРШЕННОЙ ИСТОРИИ --- */}
       {story.is_completed && (
         <div className="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 rounded-2xl text-center">
