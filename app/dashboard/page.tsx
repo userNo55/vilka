@@ -116,7 +116,7 @@ export default function Dashboard() {
                   <p className="text-slate-400 dark:text-gray-500 text-sm">
                     Опубликовано глав: <span className="font-bold text-slate-600 dark:text-gray-400">{story.chapters?.length || 0}</span>
                     {isCompleted && (
-                      <span className="ml-2 text-purple-500 dark:text-purple-400 font-bold">• Завершена</span>
+                  
                     )}
                   </p>
                 </div>
@@ -135,8 +135,7 @@ export default function Dashboard() {
                   {/* БЛОКИРОВКА ДЛЯ ЗАВЕРШЕННЫХ ИСТОРИЙ */}
                   {isCompleted ? (
                     <div className="bg-slate-100 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-6 py-4 rounded-2xl text-center flex-1 md:min-w-[200px]">
-                      <span className="text-slate-500 dark:text-gray-400 text-[10px] font-black uppercase block mb-1 tracking-widest">История завершена</span>
-                      <span className="text-slate-400 dark:text-gray-500 text-sm font-bold italic">Новые главы не добавляются</span>
+                      <span className="text-slate-500 dark:text-gray-400 text-[10px] font-black uppercase block mb-1 tracking-widest">История завершена</span>                      
                     </div>
                   ) : isVotingActive ? (
                     <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30 px-6 py-4 rounded-2xl text-center flex-1 md:min-w-[200px]">
