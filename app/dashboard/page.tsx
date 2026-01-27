@@ -19,6 +19,7 @@ export default function Dashboard() {
       setPseudonym(profile?.pseudonym || '');
       setAvatarUrl(profile?.avatar_url || null);
 
+      // ЗАПРАШИВАЕМ ВСЕ ПОЛЯ ИЗ STORIES, ВКЛЮЧАЯ is_completed
       const { data } = await supabase
         .from('stories')
         .select('*, chapters(chapter_number, expires_at)')
@@ -86,26 +87,37 @@ export default function Dashboard() {
           </div>
         ) : (
           stories.map(story => {
-            // ТВОЙ ОРИГИНАЛЬНЫЙ ПОИСК ПОСЛЕДНЕЙ ГЛАВЫ
+            // ПОИСК ПОСЛЕДНЕЙ ГЛАВЫ
             const lastChapter = story.chapters?.reduce((prev: any, curr: any) => 
               (prev.chapter_number > curr.chapter_number) ? prev : curr, story.chapters[0] || null);
             
             const isVotingActive = lastChapter && new Date(lastChapter.expires_at) > new Date();
+            const isCompleted = story.is_completed === true; // Проверяем завершение истории
 
             return (
               <div 
                 key={story.id} 
-                className="border border-slate-100 dark:border-gray-800 p-8 rounded-[32px] flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-[#1A1A1A] hover:shadow-lg dark:hover:shadow-gray-900/50 transition-shadow"
+                className={`border border-slate-100 dark:border-gray-800 p-8 rounded-[32px] flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-[#1A1A1A] hover:shadow-lg dark:hover:shadow-gray-900/50 transition-shadow ${
+                  isCompleted ? 'opacity-90' : ''
+                }`}
               >
                 <div className="mb-6 md:mb-0">
                   <Link href={`/story/${story.id}`} className="group block">
                     <h2 className="text-2xl font-bold mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-2 text-slate-900 dark:text-white">
                       {story.title}
+                      {isCompleted && (
+                        <span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 rounded-full font-bold">
+                          ЗАВЕРШЕНО
+                        </span>
+                      )}
                       <span className="text-slate-300 dark:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-normal">читать книгу ↗</span>
                     </h2>
                   </Link>
                   <p className="text-slate-400 dark:text-gray-500 text-sm">
                     Опубликовано глав: <span className="font-bold text-slate-600 dark:text-gray-400">{story.chapters?.length || 0}</span>
+                    {isCompleted && (
+                      <span className="ml-2 text-purple-500 dark:text-purple-400 font-bold">• Завершена</span>
+                    )}
                   </p>
                 </div>
                 
@@ -120,7 +132,13 @@ export default function Dashboard() {
                     </svg>
                   </button>
 
-                  {isVotingActive ? (
+                  {/* БЛОКИРОВКА ДЛЯ ЗАВЕРШЕННЫХ ИСТОРИЙ */}
+                  {isCompleted ? (
+                    <div className="bg-slate-100 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 px-6 py-4 rounded-2xl text-center flex-1 md:min-w-[200px]">
+                      <span className="text-slate-500 dark:text-gray-400 text-[10px] font-black uppercase block mb-1 tracking-widest">История завершена</span>
+                      <span className="text-slate-400 dark:text-gray-500 text-sm font-bold italic">Новые главы не добавляются</span>
+                    </div>
+                  ) : isVotingActive ? (
                     <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30 px-6 py-4 rounded-2xl text-center flex-1 md:min-w-[200px]">
                        <span className="text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase block mb-1 tracking-widest animate-pulse">Голосование активно</span>
                        <button disabled className="text-slate-400 dark:text-gray-500 text-sm font-bold cursor-not-allowed italic">Ожидайте</button>
