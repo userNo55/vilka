@@ -1,45 +1,61 @@
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs'; // Явно указываем среду выполнения
+import { NextRequest, NextResponse } from 'next/server';
 
-import { NextResponse } from 'next/server';
-
-export async function POST(req: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const shopId = process.env.YOOKASSA_SHOP_ID;
-    const secretKey = process.env.YOOKASSA_SECRET_KEY;
+    const { amount, userId, coins } = await request.json();
 
-    if (!shopId || !secretKey) {
-      return NextResponse.json({ error: "Config missing" }, { status: 500 });
+    if (!userId) {
+      return NextResponse.json({ error: 'Необходима авторизация' }, { status: 401 });
     }
 
-    const body = await req.json();
-    const amount = body.amount;
-    const userId = body.userId;
+    if (!amount) {
+      return NextResponse.json({ error: 'Укажите сумму оплаты' }, { status: 400 });
+    }
 
-    const auth = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
-
-    const res = await fetch('https://api.yookassa.ru', {
+    // Здесь интеграция с ЮKassa
+    const yookassaResponse = await fetch('https://api.yookassa.ru/v3/payments', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Idempotence-Key': crypto.randomUUID(),
         'Content-Type': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64')}`,
+        'Idempotence-Key': `${Date.now()}-${userId}`,
       },
       body: JSON.stringify({
-        amount: { value: Number(amount).toFixed(2), currency: 'RUB' },
-        confirmation: { 
-            type: 'redirect', 
-            return_url: 'https://storyvoter.vercel.app' // Укажите ваш адрес на vercel
+        amount: {
+          value: amount.toString(),
+          currency: 'RUB',
         },
         capture: true,
-        description: `Пополнение ${userId}`,
-        metadata: { userId }
+        confirmation: {
+          type: 'redirect',
+          return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success`,
+        },
+        description: `Пополнение баланса на ${coins} монет`,
+        metadata: {
+          userId,
+          coins,
+        },
       }),
     });
 
-    const data = await res.json();
-    return NextResponse.json({ confirmationUrl: data.confirmation?.confirmation_url || null });
-  } catch (err) {
-    return NextResponse.json({ error: "Server Error" }, { status: 500 });
+    const paymentData = await yookassaResponse.json();
+
+    if (paymentData.confirmation && paymentData.confirmation.confirmation_url) {
+      return NextResponse.json({ 
+        confirmationUrl: paymentData.confirmation.confirmation_url,
+        paymentId: paymentData.id 
+      });
+    } else {
+      return NextResponse.json({ 
+        error: paymentData.description || 'Ошибка создания платежа' 
+      }, { status: 400 });
+    }
+
+  } catch (error) {
+    console.error('Payment error:', error);
+    return NextResponse.json(
+      { error: 'Внутренняя ошибка сервера' },
+      { status: 500 }
+    );
   }
 }
