@@ -1,62 +1,156 @@
-// app/api/pay/route.ts - БЕЗ 'use client'
-import { NextRequest, NextResponse } from 'next/server';
+'use client';
+import { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-export async function POST(request: NextRequest) {
-  try {
-    const { amount, userId, coins } = await request.json();
+export default function BuyPage() {
+  const router = useRouter();
+  const [coins, setCoins] = useState(0);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  
+  // Состояние для принятия условий оферты
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-    if (!userId) {
-      return NextResponse.json({ error: 'Необходима авторизация' }, { status: 401 });
+  // Фиксированные пакеты как в изначальном коде
+  const packages = [
+    { coins: 1, rubles: 150, weight: 3 },  // 1 монета = 150 рублей, 3 очка
+    { coins: 3, rubles: 450, weight: 9 },  // 3 монеты = 450 рублей, 9 очков
+    { coins: 7, rubles: 1050, weight: 21 }, // 7 монет = 1050 рублей, 21 очко
+  ];
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        const { data } = await supabase.from('profiles').select('coins').eq('id', user.id).single();
+        setCoins(data?.coins || 0);
+      } else {
+        router.push('/auth');
+      }
+    }
+    loadData();
+  }, [router]);
+
+  const handlePayment = async (pkg: typeof packages[0]) => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+    
+    // Проверка чекбокса перед оплатой
+    if (!acceptedTerms) {
+      alert("Пожалуйста, примите условия пользовательского соглашения.");
+      return;
     }
 
-    if (!amount) {
-      return NextResponse.json({ error: 'Укажите сумму оплаты' }, { status: 400 });
-    }
+    setSelectedPackage(`${pkg.coins}-coins`);
+    setLoading(true);
 
-    // Здесь интеграция с ЮKassa
-    const yookassaResponse = await fetch('https://api.yookassa.ru/v3/payments', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64')}`,
-        'Idempotence-Key': `${Date.now()}-${userId}`,
-      },
-      body: JSON.stringify({
-        amount: {
-          value: amount.toString(),
-          currency: 'RUB',
-        },
-        capture: true,
-        confirmation: {
-          type: 'redirect',
-          return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/payment-success`,
-        },
-        description: `Пополнение баланса на ${coins} монет`,
-        metadata: {
-          userId,
-          coins,
-        },
-      }),
-    });
-
-    const paymentData = await yookassaResponse.json();
-
-    if (paymentData.confirmation && paymentData.confirmation.confirmation_url) {
-      return NextResponse.json({ 
-        confirmationUrl: paymentData.confirmation.confirmation_url,
-        paymentId: paymentData.id 
+    try {
+      const response = await fetch('/api/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          amount: pkg.rubles, 
+          userId: user.id,
+          coins: pkg.coins  // Количество монет
+        }),
       });
-    } else {
-      return NextResponse.json({ 
-        error: paymentData.description || 'Ошибка создания платежа' 
-      }, { status: 400 });
-    }
 
-  } catch (error) {
-    console.error('Payment error:', error);
-    return NextResponse.json(
-      { error: 'Внутренняя ошибка сервера' },
-      { status: 500 }
-    );
-  }
+      const data = await response.json();
+
+      if (data.confirmationUrl) {
+        // ПЕРЕНАПРАВЛЯЕМ НА СТРАНИЦУ ОПЛАТЫ ЮKASSA
+        window.location.href = data.confirmationUrl;
+      } else if (data.error) {
+        alert(`Ошибка: ${data.error}`);
+        setLoading(false);
+        setSelectedPackage(null);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert("Произошла ошибка при подключении к платежной системе");
+      setLoading(false);
+      setSelectedPackage(null);
+    }
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="max-w-2xl mx-auto px-6 pt-2 pb-10 font-sans bg-white dark:bg-[#0A0A0A] min-h-screen text-slate-900 dark:text-white transition-colors duration-300">
+      
+      {/* КНОПКА НАЗАД */}
+      <header className="flex justify-between items-center mb-10 py-6 border-b border-slate-100 dark:border-gray-800">
+        <Link 
+          href="/" 
+          className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition flex items-center gap-2"
+        >
+          <span>←</span> На главную
+        </Link>
+        <div className="text-right">
+          <span className="text-[10px] text-slate-400 dark:text-gray-500 block uppercase font-black">Баланс</span>
+          <span className="font-bold text-sm text-slate-900 dark:text-white">{coins} ⚡</span>
+        </div>
+      </header>
+
+      <div className="border border-slate-200 dark:border-gray-800 rounded-[32px] p-8 md:p-10 shadow-sm dark:shadow-lg dark:shadow-gray-900 text-center bg-white dark:bg-[#1A1A1A]">
+        <h1 className="text-3xl font-black mb-4 text-slate-900 dark:text-white leading-tight">Пополнить баланс</h1>
+        <p className="text-slate-500 dark:text-gray-400 mb-8 text-sm leading-relaxed">
+          Один платный голос (<span className="text-blue-600 dark:text-blue-400 font-bold">1 ⚡</span>) дает вашей опции сразу 
+          <span className="font-bold text-slate-900 dark:text-white ml-1 underline italic">3 очка</span>.
+        </p>
+
+        <div className="grid gap-4 mb-8">
+          {packages.map(pkg => (
+            <button 
+              key={pkg.coins}
+              onClick={() => handlePayment(pkg)}
+              disabled={loading}
+              className={`group p-5 border-2 border-slate-100 dark:border-gray-800 rounded-3xl flex justify-between items-center 
+                transition-all bg-white dark:bg-[#0A0A0A] 
+                ${selectedPackage === `${pkg.coins}-coins` ? 'border-blue-500' : 'hover:border-blue-500 dark:hover:border-blue-500'}
+                disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <div className="text-left">
+                <span className="block font-black text-2xl text-slate-900 dark:text-white">{pkg.coins} ⚡</span>
+                <span className="text-[10px] text-slate-400 dark:text-gray-500 font-bold uppercase tracking-wider">
+                  {pkg.weight} очка в сюжет
+                </span>
+              </div>
+              <div className={`
+                px-4 py-2 rounded-2xl font-black transition shadow-lg
+                ${selectedPackage === `${pkg.coins}-coins` 
+                  ? 'bg-blue-700 text-white shadow-blue-100 dark:shadow-blue-900/50' 
+                  : 'bg-blue-600 text-white group-hover:bg-blue-700 shadow-blue-100 dark:shadow-blue-900/50'
+                }`}
+              >
+                {pkg.rubles} ₽
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* ПОДТВЕРЖДЕНИЕ УСЛОВИЙ (ОФЕРТА) */}
+        <div className="flex items-start gap-3 text-left mb-8 p-4 bg-slate-50 dark:bg-gray-900/50 rounded-2xl border border-slate-100 dark:border-gray-800">
+          <input 
+            type="checkbox" 
+            id="terms"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-1 w-5 h-5 rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-600 cursor-pointer"
+          />
+          <label htmlFor="terms" className="text-[11px] leading-snug text-slate-500 dark:text-gray-400 cursor-pointer">
+            Я принимаю условия <Link href="/purchase-terms" className="text-blue-600 dark:text-blue-400 font-bold underline">Пользовательского соглашения</Link> и согласен на оказание платных услуг.
+          </label>
+        </div>
+        
+        <p className="text-[10px] text-slate-400 dark:text-gray-500 uppercase tracking-widest font-bold">Безопасная оплата ЮKassa</p>
+      </div>
+    </div>
+  );
 }
