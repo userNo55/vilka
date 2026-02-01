@@ -125,6 +125,7 @@ export default function HomePage() {
                     </svg>
                   </button>
 
+                  {/* НОВАЯ КНОПКА ФИЛЬТРА АКТИВНЫХ ИСТОРИЙ */}
                   <button 
                     onClick={() => setShowActiveOnly(!showActiveOnly)}
                     className={`p-2 rounded-full transition-all duration-300 ${
