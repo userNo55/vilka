@@ -1,4 +1,4 @@
-// app/api/pay/route.ts
+// app/api/pay/route.ts - ОБНОВЛЕННАЯ ВЕРСИЯ
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -13,13 +13,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Укажите сумму оплаты' }, { status: 400 });
     }
 
-    // Определяем URL для возврата - критически важно!
-    const host = request.headers.get('host') || 'storyvoter.vercel.app';
-    const returnUrl = `https://${host}/payment-success`;
+    // ЯВНО УКАЗАННЫЙ return_url - меняйте этот URL по необходимости
+    const returnUrl = 'https://storyvoter.vercel.app/payment-success';
     
-    console.log('🔗 Возвращаем пользователя на:', returnUrl);
+    console.log('🔗 ЖЕСТКО УКАЗАННЫЙ return_url:', returnUrl);
 
-    // Здесь интеграция с ЮKassa
+    // ЯВНЫЙ запрос к ЮKassa
+    const requestBody = {
+      amount: {
+        value: amount.toFixed(2),
+        currency: 'RUB',
+      },
+      capture: true,
+      confirmation: {
+        type: 'redirect',
+        return_url: returnUrl, // Прямое использование
+      },
+      description: `Пополнение баланса на ${coins} голосов в StoryVoter`,
+      metadata: {
+        userId,
+        coins,
+      },
+    };
+
+    console.log('📤 ПОЛНОЕ ТЕЛО ЗАПРОСА к ЮKassa:', JSON.stringify(requestBody, null, 2));
+
     const yookassaResponse = await fetch('https://api.yookassa.ru/v3/payments', {
       method: 'POST',
       headers: {
@@ -27,38 +45,20 @@ export async function POST(request: NextRequest) {
         'Authorization': `Basic ${Buffer.from(`${process.env.YOOKASSA_SHOP_ID}:${process.env.YOOKASSA_SECRET_KEY}`).toString('base64')}`,
         'Idempotence-Key': `${Date.now()}-${userId}-${Math.random().toString(36).slice(2, 11)}`,
       },
-      body: JSON.stringify({
-        amount: {
-          value: amount.toFixed(2),
-          currency: 'RUB',
-        },
-        capture: true,
-        confirmation: {
-          type: 'redirect',
-          return_url: returnUrl, // Вот этот параметр отвечает за "Вернуться на сайт"
-        },
-        description: `Пополнение баланса на ${coins} голосов в StoryVoter`,
-        metadata: {
-          userId,
-          coins,
-        },
-      }),
+      body: JSON.stringify(requestBody), // Используем явно сформированный объект
     });
 
     const paymentData = await yookassaResponse.json();
     
-    // Логируем для отладки
-    console.log('💰 Ответ ЮKassa:', {
-      paymentId: paymentData.id,
-      confirmationUrl: paymentData.confirmation?.confirmation_url,
-      returnUrl: paymentData.confirmation?.return_url,
-      error: paymentData.error
-    });
+    console.log('💰 ОТВЕТ ЮKassa (полный):', JSON.stringify(paymentData, null, 2));
+    console.log('💰 Статус ответа:', yookassaResponse.status);
 
     if (paymentData.confirmation && paymentData.confirmation.confirmation_url) {
       return NextResponse.json({ 
         confirmationUrl: paymentData.confirmation.confirmation_url,
-        paymentId: paymentData.id 
+        paymentId: paymentData.id,
+        // Для отладки возвращаем что получили
+        receivedReturnUrl: paymentData.confirmation.return_url
       });
     } else {
       console.error('❌ Ошибка ЮKassa:', paymentData);
