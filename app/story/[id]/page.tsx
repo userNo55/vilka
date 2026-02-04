@@ -65,11 +65,11 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   const [userCoins, setUserCoins] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [isCurrentUserAuthor, setIsCurrentUserAuthor] = useState(false);
 
   // Находим ID последней главы
   const findLatestChapterId = (chapters: any[]) => {
     if (chapters.length === 0) return null;
-    // Сортируем по номеру главы (от большего к меньшему) и берем первую
     const sortedChapters = [...chapters].sort((a, b) => b.chapter_number - a.chapter_number);
     return sortedChapters[0].id;
   };
@@ -79,11 +79,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
       if (!id) return;
       
       try {
-        // Получаем пользователя
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
 
-        // Параллельные запросы для данных пользователя и истории
         const [
           profilePromise,
           votesPromise,
@@ -92,7 +90,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         ] = await Promise.all([
           user ? supabase.from('profiles').select('coins').eq('id', user.id).single() : Promise.resolve({ data: null }),
           user ? supabase.from('votes').select('chapter_id').eq('user_id', user.id) : Promise.resolve({ data: [] }),
-          // ИСПРАВЛЕНО: запрашиваем ВСЕ поля из stories
           supabase.from('stories').select(`
             *,
             profiles(*)
@@ -100,19 +97,21 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           supabase.from('chapters').select('*, options(*)').eq('story_id', id).order('chapter_number', { ascending: true })
         ]);
 
-        // Обработка результатов
         const profileData = profilePromise.data;
         const votesData = votesPromise.data;
         const storyData = storyPromise.data;
         const chaptersData = chaptersPromise.data;
-
-        console.log('Загружена история:', storyData); // Для отладки
+        
         setUserCoins(profileData?.coins || 0);
         setVotedChapters(votesData?.map((item: any) => item.chapter_id) || []);
         setStory(storyData);
         setChapters(chaptersData || []);
 
-        // ВСЕГДА открываем последнюю главу при загрузке
+        // Проверяем, является ли автор истории текущим пользователем
+        if (storyData?.author_id === user?.id) {
+          setIsCurrentUserAuthor(true);
+        }
+
         const latestChapterId = findLatestChapterId(chaptersData || []);
         if (latestChapterId) {
           setOpenChapter(latestChapterId);
@@ -130,7 +129,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   // Проверка является ли пользователь автором
   const isAuthor = user && story && story.author_id === user.id;
 
-  // Обработка клика по главе (просто переключаем состояние)
   const handleChapterClick = (chapterId: string) => {
     setOpenChapter(openChapter === chapterId ? null : chapterId);
   };
@@ -143,14 +141,16 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
     await supabase.from('options').update({ votes: currentVotes + 1 }).eq('id', optionId);
     
-    // Обновляем страницу, голосование должно остаться открытым
     window.location.reload();
   };
 
-  // Платное голосование (вес 3)
+  // Платное голосование (вес 3) - ТОЛЬКО для историй созданных текущим пользователем
   const handlePaidVote = async (chapterId: string, optionId: string) => {
     if (userCoins < 1) return router.push('/buy');
     
+    // Проверяем, является ли текущий пользователь автором этой истории
+    if (!isCurrentUserAuthor) return;
+
     const { error } = await supabase.rpc('vote_with_coin', {
       user_id_param: user.id,
       option_id_param: optionId,
@@ -159,12 +159,10 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
     if (error) alert(error.message);
     else {
-      // Обновляем страницу, голосование должно остаться открытым
       window.location.reload();
     }
   };
 
-  // Удаление главы (доступно только автору и только для последней главы до окончания голосования)
   const handleDeleteChapter = async (chapterId: string, expiresAt: string) => {
     const isExpired = new Date(expiresAt).getTime() < new Date().getTime();
     
@@ -180,7 +178,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     setDeleting(chapterId);
 
     try {
-      // Удаляем только главу - связанные данные удалятся каскадно
       const { error } = await supabase
         .from('chapters')
         .delete()
@@ -191,10 +188,8 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         throw error;
       }
 
-      // Обновляем локальное состояние
       setChapters(prevChapters => prevChapters.filter(c => c.id !== chapterId));
       
-      // После удаления находим новую последнюю главу и открываем ее
       const updatedLatestChapterId = findLatestChapterId(chapters.filter(c => c.id !== chapterId));
       setOpenChapter(updatedLatestChapterId);
 
@@ -208,7 +203,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     }
   };
 
-  // Функция завершения истории
   const handleCompleteStory = async () => {
     if (!isAuthor || !story) return;
     
@@ -226,7 +220,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
       if (error) throw error;
 
-      // Обновляем локальное состояние - ВАЖНО: копируем ВСЕ поля
       setStory({ 
         ...story, 
         is_completed: true 
@@ -243,16 +236,13 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto p-6 font-sans bg-white dark:bg-[#0A0A0A] min-h-screen text-slate-900 dark:text-white transition-colors duration-300">
-        {/* Скелетон хедера */}
         <header className="flex justify-between items-center mb-8 border-b pb-4 border-slate-100 dark:border-gray-800">
           <div className="h-6 w-32 bg-slate-200 dark:bg-gray-700 rounded"></div>
           <div className="h-8 w-40 bg-slate-200 dark:bg-gray-700 rounded-full"></div>
         </header>
 
-        {/* Скелетон заголовка */}
         <div className="h-12 bg-slate-200 dark:bg-gray-700 rounded mb-10 w-3/4"></div>
 
-        {/* Скелетон блока автора */}
         <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 dark:bg-[#1A1A1A] rounded-[24px] border border-slate-100 dark:border-gray-800">
           <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-gray-700"></div>
           <div className="flex-1">
@@ -261,14 +251,12 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           </div>
         </div>
 
-        {/* Скелетон описания */}
         <div className="space-y-2 mb-10">
           <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded w-full"></div>
           <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded w-5/6"></div>
           <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded w-4/6"></div>
         </div>
 
-        {/* Скелетоны глав */}
         <div className="space-y-6">
           {[...Array(3)].map((_, i) => (
             <ChapterSkeleton key={i} />
@@ -293,7 +281,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
 
       <h1 className="text-4xl font-black mb-10 text-slate-900 dark:text-white">{story.title}</h1>
       
-      {/* --- БЛОК АВТОРА --- */}
       {story.profiles && (
         <div className="flex items-center gap-4 mb-8 p-4 bg-slate-50 dark:bg-[#1A1A1A] rounded-[24px] border border-slate-100 dark:border-gray-800">
           <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-gray-700 overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm">
@@ -314,7 +301,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
       
       <p className="text-slate-500 dark:text-gray-400 text-lg mb-10 italic">{story.description}</p>
 
-      {/* --- КНОПКА ЗАВЕРШЕНИЯ ИСТОРИИ (только для автора) --- */}
       {isAuthor && !story.is_completed && (
         <div className="mb-8 flex justify-center">
           <button
@@ -339,10 +325,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
           const isExpired = new Date(chapter.expires_at).getTime() < new Date().getTime();
           const hasVoted = votedChapters.includes(chapter.id);
           const isLatest = chapter.chapter_number === latestChapterNumber;
-          const isLatestVotable = isLatest && !isExpired && !story.is_completed; // Учитываем завершенность истории
+          const isLatestVotable = isLatest && !isExpired && !story.is_completed;
           const totalVotes = chapter.options?.reduce((sum: number, o: any) => sum + o.votes, 0) || 0;
           
-          // Удаление доступно ТОЛЬКО для ПОСЛЕДНЕЙ главы И ТОЛЬКО до окончания голосования И если история не завершена
           const canDelete = isAuthor && isLatest && !isExpired && !story.is_completed;
 
           return (
@@ -365,7 +350,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                   <span className="text-slate-400 dark:text-gray-400 text-lg">{openChapter === chapter.id ? '−' : '+'}</span>
                 </button>
                 
-                {/* Кнопка удаления для автора - ТОЛЬКО для последней главы, до окончания голосования и если история не завершена */}
                 {canDelete && (
                   <button
                     onClick={() => handleDeleteChapter(chapter.id, chapter.expires_at)}
@@ -388,20 +372,17 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                 <div className="p-6 border-t border-slate-100 dark:border-gray-800 bg-white dark:bg-[#1A1A1A]">
                   <div className="text-lg leading-relaxed mb-10 text-slate-700 dark:text-gray-300 whitespace-pre-wrap">{chapter.content}</div>
                   
-                  {/* БЛОК ГОЛОСОВАНИЯ или ИНФОРМАЦИЯ О ЗАВЕРШЕНИИ */}
                   {!story.is_completed ? (
                     <div className="bg-white dark:bg-gray-900 p-8 rounded-[32px] border border-slate-200 dark:border-gray-800 shadow-sm">
                       <h3 className="text-xl font-bold mb-4 text-center text-slate-900 dark:text-white">
                         {chapter.question_text}
                       </h3>
                       
-                      {/* Таймер показывается ТОЛЬКО для последней главы И ТОЛЬКО если голосование не завершено */}
                       {isLatestVotable && <Countdown expiresAt={chapter.expires_at} />}
 
                       <div className="space-y-3">
                         {chapter.options?.map((opt: any) => {
                           const percentage = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                          // Голосовать можно ТОЛЬКО в последней главе И ТОЛЬКО если голосование не завершено
                           const canVote = isLatestVotable && !hasVoted && user;
 
                           return (
@@ -420,8 +401,8 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                                 </div>
                               </button>
 
-                              {/* КНОПКА ПОДДЕРЖАТЬ (появляется после голосования) - ТОЛЬКО для последней главы */}
-                              {hasVoted && isLatestVotable && (
+                              {/* КНОПКА ПЛАТНОГО ГОЛОСОВАНИЯ - ПОКАЗЫВАЕТСЯ ТОЛЬКО ДЛЯ АВТОРА ИСТОРИИ */}
+                              {hasVoted && isLatestVotable && isCurrentUserAuthor && (
                                 <button 
                                   onClick={() => handlePaidVote(chapter.id, opt.id)}
                                   className="w-full py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 transition"
