@@ -506,17 +506,7 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                       </h3>
                       
                       {isLatestVotable && <Countdown expiresAt={chapter.expires_at} />}
-
-                      {/* ОБЩАЯ СТАТИСТИКА */}
-                      {totalVotes > 0 && (hasVoted || isExpired) && (
-                        <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-100 dark:border-gray-700">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600 dark:text-gray-400">Всего голосов:</span>
-                            <span className="font-bold text-slate-900 dark:text-white">{totalVotes}</span>
-                          </div>
-                        </div>
-                      )}
-
+                      
                       {/* КОНТЕЙНЕР ДЛЯ ОПЦИЙ */}
                       <div className="space-y-4">
                         {chapter.options?.map((opt: any, index: number) => {
