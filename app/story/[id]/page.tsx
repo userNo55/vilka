@@ -34,7 +34,7 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
   }, [expiresAt]);
 
   return (
-    <div className="text-red-600 dark:text-red-400 font-bold text-sm mb-4 text-center bg-red-50 dark:bg-red-950/30 py-3 px-4 rounded-xl border-2 border-red-200 dark:border-red-800 tracking-wider shadow-sm">
+    <div className="text-red-600 dark:text-red-400 font-black text-lg mb-4 text-center bg-gray-900 py-3 px-4 rounded-lg border-2 border-red-500 tracking-widest font-mono shadow-lg">
       ⏳ {timeLeft}
     </div>
   );
