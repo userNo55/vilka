@@ -1,28 +1,19 @@
 @import "tailwindcss";
+
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
 }
 
-@utility text-mask-png {
-  background-image: url('/your-image.png'); 
-  background-size: cover;
-  background-position: center;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  display: inline-block;
-}
-
 :root {
-  --background: #ffffff;
-  --foreground: #20242f;
+  --background: #ffffff; 
+  --foreground: #20242f; 
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1e2027;
-    --foreground: #f1f5f9;
+    --background: #1e2027; 
+    --foreground: #f1f5f9; 
   }
 }
 
@@ -37,7 +28,6 @@
     @apply text-slate-900 dark:text-white;
   }
 }
-
 
 * {
   @apply border-slate-200 dark:border-slate-800;
