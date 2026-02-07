@@ -4,6 +4,10 @@ import { useState, useEffect, use } from 'react';
 import { supabase } from '../../supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { FaShare, FaTelegramPlane, FaVk, FaCopy, FaCheck } from 'react-icons/fa';
+
+// Жесткий ID автора для проверки
+const AUTHOR_ID = '01db5da0-7374-40ac-b6a5-63be48bc7410';
 
 // --- КОМПОНЕНТ ТАЙМЕРА ---
 function Countdown({ expiresAt }: { expiresAt: string }) {
@@ -32,6 +36,133 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
   return (
     <div className="text-orange-500 font-mono text-xs mb-4 text-center bg-orange-50 dark:bg-orange-950/30 py-2 rounded-xl border border-orange-100 dark:border-orange-800">
       {timeLeft}
+    </div>
+  );
+}
+
+// --- КОМПОНЕНТ ДЛЯ ПОДЕЛИТЬСЯ ---
+function ShareButton({ 
+  storyTitle, 
+  chapterNumber, 
+  chapterId 
+}: { 
+  storyTitle: string, 
+  chapterNumber: number, 
+  chapterId: string 
+}) {
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareMessages = [
+    `Тут в истории «${storyTitle}» идёт спорный выбор в главе ${chapterNumber}. Идём ломать сюжет в нужную сторону. Голосуй тут: ${window.location.origin}/story/${chapterId}`,
+    `В главе ${chapterNumber} «${storyTitle}» дилемма. Нужен твой голос. Жми: ${window.location.origin}/story/${chapterId}`,
+    `Народ, срочно! В «${storyTitle}» идёт битва за развитие сюжета. Наша версия проигрывает. Лети голосовать: ${window.location.origin}/story/${chapterId}`,
+    `Отдал свой голос в истории «${storyTitle}». Теперь жду новую главу как соучастник. Интересно, к чему это приведёт? ${window.location.origin}/story/${chapterId}`
+  ];
+
+  const getRandomMessage = () => {
+    const randomIndex = Math.floor(Math.random() * shareMessages.length);
+    return shareMessages[randomIndex];
+  };
+
+  const copyToClipboard = async () => {
+    const message = getRandomMessage();
+    try {
+      await navigator.clipboard.writeText(message);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Ошибка копирования:', err);
+    }
+  };
+
+  const shareToTelegram = () => {
+    const message = encodeURIComponent(getRandomMessage());
+    window.open(`https://t.me/share/url?url=${window.location.origin}/story/${chapterId}&text=${message}`, '_blank');
+  };
+
+  const shareToVK = () => {
+    const message = encodeURIComponent(getRandomMessage());
+    window.open(`https://vk.com/share.php?url=${window.location.origin}/story/${chapterId}&title=${encodeURIComponent(storyTitle)}&comment=${message}`, '_blank');
+  };
+
+  const shareViaNative = async () => {
+    const message = getRandomMessage();
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Глава ${chapterNumber}: ${storyTitle}`,
+          text: message,
+          url: `${window.location.origin}/story/${chapterId}`,
+        });
+      } catch (err) {
+        console.error('Ошибка нативного шеринга:', err);
+      }
+    } else {
+      copyToClipboard();
+    }
+  };
+
+  return (
+    <div className="relative mt-4">
+      <button
+        onClick={() => setShowSharePanel(!showSharePanel)}
+        className="w-full py-2 text-sm font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-500/30 transition flex items-center justify-center gap-2"
+      >
+        <FaShare className="w-4 h-4" />
+        Позвать друзей / Поделиться
+      </button>
+
+      {showSharePanel && (
+        <div className="mt-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-slate-200 dark:border-gray-700 shadow-lg">
+          <p className="text-xs text-slate-500 dark:text-gray-400 mb-3 text-center">
+            Случайный текст для расшаривания:
+          </p>
+          <div className="text-sm text-slate-700 dark:text-gray-300 mb-4 p-3 bg-slate-50 dark:bg-gray-900 rounded-lg border border-slate-100 dark:border-gray-700">
+            {getRandomMessage()}
+          </div>
+          
+          <div className="flex justify-center gap-2">
+            <button
+              onClick={shareToTelegram}
+              className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+              title="Поделиться в Telegram"
+            >
+              <FaTelegramPlane className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={shareToVK}
+              className="p-2 bg-[#4C75A3] text-white rounded-lg hover:bg-[#3a5a80] transition"
+              title="Поделиться в VK"
+            >
+              <FaVk className="w-5 h-5" />
+            </button>
+            
+            <button
+              onClick={copyToClipboard}
+              className="p-2 bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-300 rounded-lg hover:bg-slate-300 dark:hover:bg-gray-600 transition flex items-center gap-2"
+              title="Скопировать ссылку"
+            >
+              {copied ? (
+                <>
+                  <FaCheck className="w-5 h-5 text-green-500" />
+                  <span className="text-xs">Скопировано!</span>
+                </>
+              ) : (
+                <FaCopy className="w-5 h-5" />
+              )}
+            </button>
+            
+            <button
+              onClick={shareViaNative}
+              className="p-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+              title="Поделиться"
+            >
+              <FaShare className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -65,9 +196,8 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
   const [userCoins, setUserCoins] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
-  const [isCurrentUserAuthor, setIsCurrentUserAuthor] = useState(false);
+  const [isAuthorIdMatch, setIsAuthorIdMatch] = useState(false);
 
-  // Находим ID последней главы
   const findLatestChapterId = (chapters: any[]) => {
     if (chapters.length === 0) return null;
     const sortedChapters = [...chapters].sort((a, b) => b.chapter_number - a.chapter_number);
@@ -107,9 +237,9 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         setStory(storyData);
         setChapters(chaptersData || []);
 
-        // Проверяем, является ли автор истории текущим пользователем
-        if (storyData?.author_id === user?.id) {
-          setIsCurrentUserAuthor(true);
+        // ПРОВЕРКА: история создана нужным автором?
+        if (storyData?.author_id === AUTHOR_ID) {
+          setIsAuthorIdMatch(true);
         }
 
         const latestChapterId = findLatestChapterId(chaptersData || []);
@@ -126,14 +256,14 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     loadData();
   }, [id]);
 
-  // Проверка является ли пользователь автором
+  // Проверка является ли пользователь автором этой истории
   const isAuthor = user && story && story.author_id === user.id;
 
   const handleChapterClick = (chapterId: string) => {
     setOpenChapter(openChapter === chapterId ? null : chapterId);
   };
 
-  // Обычное бесплатное голосование (вес 1)
+  // Обычное бесплатное голосование (вес 1) - доступно всем
   const handleVote = async (chapterId: string, optionId: string, currentVotes: number) => {
     if (!user) return router.push('/auth');
     const { error } = await supabase.from('votes').insert({ user_id: user.id, chapter_id: chapterId });
@@ -144,13 +274,11 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
     window.location.reload();
   };
 
-  // Платное голосование (вес 3) - ТОЛЬКО для историй созданных текущим пользователем
+  // Платное голосование (вес 3) - доступно только если история создана нужным автором
   const handlePaidVote = async (chapterId: string, optionId: string) => {
+    if (!user) return router.push('/auth');
     if (userCoins < 1) return router.push('/buy');
     
-    // Проверяем, является ли текущий пользователь автором этой истории
-    if (!isCurrentUserAuthor) return;
-
     const { error } = await supabase.rpc('vote_with_coin', {
       user_id_param: user.id,
       option_id_param: optionId,
@@ -298,7 +426,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      
       <p className="text-slate-500 dark:text-gray-400 text-lg mb-10 italic">{story.description}</p>
 
       {isAuthor && !story.is_completed && (
@@ -401,8 +528,8 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                                 </div>
                               </button>
 
-                              {/* КНОПКА ПЛАТНОГО ГОЛОСОВАНИЯ - ПОКАЗЫВАЕТСЯ ТОЛЬКО ДЛЯ АВТОРА ИСТОРИИ */}
-                              {hasVoted && isLatestVotable && isCurrentUserAuthor && (
+                              {/* КНОПКА ПЛАТНОГО ГОЛОСОВАНИЯ - ПОКАЗЫВАЕТСЯ ТОЛЬКО ЕСЛИ ИСТОРИЯ СОЗДАНА АВТОРОМ С ID 01db5da0-7374-40ac-b6a5-63be48bc7410 */}
+                              {hasVoted && isLatestVotable && isAuthorIdMatch && (
                                 <button 
                                   onClick={() => handlePaidVote(chapter.id, opt.id)}
                                   className="w-full py-2 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/30 transition"
@@ -414,6 +541,15 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                           );
                         })}
                       </div>
+
+                      {/* КНОПКА "ПОДЕЛИТЬСЯ" - ПОЯВЛЯЕТСЯ ПОСЛЕ ГОЛОСОВАНИЯ (ВСЕМ) */}
+                      {hasVoted && isLatestVotable && (
+                        <ShareButton 
+                          storyTitle={story.title}
+                          chapterNumber={chapter.chapter_number}
+                          chapterId={id}
+                        />
+                      )}
 
                       {!user && isLatestVotable && (
                         <p className="text-center text-xs text-slate-500 dark:text-gray-400 mt-6 uppercase font-bold tracking-widest">
