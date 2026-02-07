@@ -25,7 +25,7 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
         const h = Math.floor(distance / (1000 * 60 * 60));
         const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((distance % (1000 * 60)) / 1000);
-        setTimeLeft(`Осталось: ${h}ч ${m}м ${s}с`);
+        setTimeLeft(`${h}ч ${m}м ${s}с`);
       }
     };
     updateTimer();
@@ -34,8 +34,8 @@ function Countdown({ expiresAt }: { expiresAt: string }) {
   }, [expiresAt]);
 
   return (
-    <div className="text-orange-500 font-mono text-xs mb-4 text-center bg-orange-50 dark:bg-orange-950/30 py-2 rounded-xl border border-orange-100 dark:border-orange-800">
-      {timeLeft}
+    <div className="text-red-600 dark:text-red-400 font-bold text-sm mb-4 text-center bg-red-50 dark:bg-red-950/30 py-3 px-4 rounded-xl border-2 border-red-200 dark:border-red-800 tracking-wider shadow-sm">
+      ⏳ {timeLeft}
     </div>
   );
 }
@@ -506,7 +506,17 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                       </h3>
                       
                       {isLatestVotable && <Countdown expiresAt={chapter.expires_at} />}
-                      
+
+                      {/* ОБЩАЯ СТАТИСТИКА */}
+                      {totalVotes > 0 && (hasVoted || isExpired) && (
+                        <div className="mb-6 p-4 bg-slate-50 dark:bg-gray-800 rounded-xl border border-slate-100 dark:border-gray-700">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-600 dark:text-gray-400">Всего голосов:</span>
+                            <span className="font-bold text-slate-900 dark:text-white">{totalVotes}</span>
+                          </div>
+                        </div>
+                      )}
+
                       {/* КОНТЕЙНЕР ДЛЯ ОПЦИЙ */}
                       <div className="space-y-4">
                         {chapter.options?.map((opt: any, index: number) => {
@@ -536,11 +546,6 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                                         }`}>
                                           Вариант {index + 1}
                                         </span>
-                                        {hasVotes && (
-                                          <span className="text-xs font-bold text-slate-500 dark:text-gray-400">
-                                            {opt.votes} голос{opt.votes === 1 ? '' : 'а'}
-                                          </span>
-                                        )}
                                       </div>
                                       <p className="text-slate-900 dark:text-white font-medium">
                                         {opt.text}
@@ -548,24 +553,24 @@ export default function StoryPage({ params }: { params: Promise<{ id: string }> 
                                     </div>
                                     
                                     {/* ПРАВАЯ ЧАСТЬ: ПРОЦЕНТЫ И КНОПКА */}
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
                                       {/* ПРОЦЕНТЫ (если голосовали) */}
                                       {(hasVoted || isExpired) && totalVotes > 0 && (
-                                        <div className="text-right min-w-[60px]">
+                                        <div className="text-right">
                                           <div className="text-2xl font-black text-slate-900 dark:text-white">
                                             {percentage}%
                                           </div>
                                         </div>
                                       )}
                                       
-                                      {/* КНОПКА ПОВЛИЯТЬ */}
+                                      {/* КНОПКА ПОДДЕРЖАТЬ */}
                                       {hasVoted && isLatestVotable && isAuthorIdMatch && (
                                         <button 
                                           onClick={() => handlePaidVote(chapter.id, opt.id)}
-                                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+                                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap"
                                         >
                                           <span className="text-yellow-300">⚡</span>
-                                          Повлиять
+                                          Поддержать
                                         </button>
                                       )}
                                     </div>
