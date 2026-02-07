@@ -128,7 +128,7 @@ export default function HomePage() {
                     onClick={() => setShowActiveOnly(!showActiveOnly)}
                     className={`p-2 rounded-full transition-all duration-300 ${
                       showActiveOnly 
-                        ? 'text-green-500 bg-green-50 dark:bg-green-950/30' 
+                        ? 'bg-green-500 text-white shadow-lg shadow-green-900/50'
                         : 'bg-transparent text-slate-400 hover:text-green-500'
                     }`}
                     title={showActiveOnly ? "Показать все истории" : "Показать только активные"}
@@ -141,12 +141,12 @@ export default function HomePage() {
                     onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
                     className={`p-2 rounded-full transition-all duration-300 ${
                       showFavoritesOnly 
-                        ? 'text-red-500' 
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-900/50'
                         : 'bg-transparent text-slate-400 hover:text-red-500'
                     }`}
                     title={showFavoritesOnly ? "Показать все истории" : "Показать избранное"}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.5">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                     </svg>
                   </button>
